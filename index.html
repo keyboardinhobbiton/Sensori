@@ -1,1 +1,597 @@
-
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Creatore Interattivo di Grafi</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis.min.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            background-color: #f5f5f5;
+        }
+        .container {
+            display: flex;
+            flex: 1;
+        }
+        #network {
+            flex: 1;
+            border: 1px solid #ccc;
+            background-color: white;
+        }
+        .panel {
+            width: 300px;
+            padding: 15px;
+            background-color: #f0f0f0;
+            border-left: 1px solid #ccc;
+            overflow-y: auto;
+        }
+        .header {
+            background-color: #3498db;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        button {
+            padding: 8px 12px;
+            margin: 5px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .section {
+            margin-bottom: 15px;
+            padding: 10px;
+            background-color: white;
+            border-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .section h3 {
+            margin-top: 0;
+            color: #3498db;
+        }
+        .actions {
+            display: flex;
+            justify-content: space-around;
+            margin: 10px 0;
+        }
+        .color-picker {
+            display: flex;
+            align-items: center;
+        }
+        .color-picker input[type="color"] {
+            width: 40px;
+            margin-right: 10px;
+        }
+        .tooltip {
+            position: absolute;
+            background-color: rgba(0,0,0,0.7);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            z-index: 1000;
+            display: none;
+        }
+        #legend {
+            margin-top: 15px;
+            padding: 10px;
+            background-color: white;
+            border-radius: 4px;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin: 5px 0;
+        }
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            margin-right: 10px;
+            border-radius: 50%;
+        }
+        .info-text {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Creatore Interattivo di Grafi</h1>
+    </div>
+    <div class="container">
+        <div id="network"></div>
+        <div class="panel">
+            <div class="section">
+                <h3>Informazioni</h3>
+                <p>Crea e modifica il tuo grafo in modo interattivo:</p>
+                <ul>
+                    <li>Clicca due volte per creare un nodo</li>
+                    <li>Seleziona nodi e usa le opzioni qui sotto</li>
+                    <li>Trascina tra nodi per creare collegamenti</li>
+                </ul>
+            </div>
+            
+            <div class="section">
+                <h3>Aggiungi Nodo</h3>
+                <input type="text" id="node-label" placeholder="Etichetta del nodo">
+                <div class="color-picker">
+                    <input type="color" id="node-color" value="#3498db">
+                    <span>Colore del nodo</span>
+                </div>
+                <button id="add-node">Aggiungi Nodo</button>
+            </div>
+            
+            <div class="section">
+                <h3>Aggiungi Collegamento</h3>
+                <select id="from-node"></select>
+                <select id="to-node"></select>
+                <input type="text" id="edge-label" placeholder="Etichetta del collegamento (opzionale)">
+                <button id="add-edge">Collega Nodi</button>
+            </div>
+            
+            <div class="section">
+                <h3>Modifica</h3>
+                <input type="text" id="edit-label" placeholder="Nuova etichetta">
+                <div class="color-picker">
+                    <input type="color" id="edit-color" value="#3498db">
+                    <span>Nuovo colore</span>
+                </div>
+                <button id="edit-selected">Modifica Selezionato</button>
+                <button id="delete-selected">Elimina Selezionato</button>
+            </div>
+            
+            <div class="section">
+                <h3>Gestione Grafo</h3>
+                <div class="actions">
+                    <button id="save-graph">Salva Grafo</button>
+                    <button id="load-graph">Carica Grafo</button>
+                </div>
+                <div class="actions">
+                    <button id="clear-graph">Cancella Tutto</button>
+                    <button id="export-graph">Esporta Immagine</button>
+                </div>
+                <div class="info-text">
+                    I dati verranno salvati localmente nel tuo browser.
+                </div>
+            </div>
+            
+            <div id="legend">
+                <h3>Legenda</h3>
+                <div id="legend-content">
+                    <!-- Contenuto dinamico della legenda -->
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="tooltip" id="tooltip"></div>
+    
+    <script>
+        // Inizializzazione del grafo
+        const nodes = new vis.DataSet([]);
+        const edges = new vis.DataSet([]);
+        
+        // Configurazione per la visualizzazione
+        const options = {
+            nodes: {
+                shape: 'dot',
+                size: 20,
+                font: {
+                    size: 14
+                },
+                borderWidth: 2,
+                shadow: true
+            },
+            edges: {
+                width: 2,
+                arrows: {
+                    to: { enabled: true, scaleFactor: 1 }
+                },
+                smooth: {
+                    type: 'continuous'
+                },
+                font: {
+                    size: 12,
+                    align: 'middle'
+                }
+            },
+            physics: {
+                stabilization: true,
+                barnesHut: {
+                    gravitationalConstant: -2000,
+                    centralGravity: 0.3,
+                    springLength: 150,
+                    springConstant: 0.04,
+                    damping: 0.09
+                }
+            },
+            manipulation: {
+                enabled: false
+            },
+            interaction: {
+                hover: true,
+                tooltipDelay: 200,
+                multiselect: true
+            }
+        };
+        
+        // Creazione del container per il network
+        const container = document.getElementById('network');
+        const network = new vis.Network(container, { nodes, edges }, options);
+        
+        // Variabili globali
+        let nodeIdCounter = 1;
+        let selectedNodeId = null;
+        let selectedEdgeId = null;
+        const colorGroups = {};
+        
+        // Funzione per aggiornare la legenda
+        function updateLegend() {
+            const legendContent = document.getElementById('legend-content');
+            legendContent.innerHTML = '';
+            
+            Object.keys(colorGroups).forEach(color => {
+                const count = colorGroups[color];
+                const legendItem = document.createElement('div');
+                legendItem.className = 'legend-item';
+                
+                const colorBox = document.createElement('div');
+                colorBox.className = 'legend-color';
+                colorBox.style.backgroundColor = color;
+                
+                const label = document.createElement('span');
+                label.textContent = `${count} nodi`;
+                
+                legendItem.appendChild(colorBox);
+                legendItem.appendChild(label);
+                legendContent.appendChild(legendItem);
+            });
+        }
+        
+        // Funzione per aggiornare i dropdown
+        function updateNodeDropdowns() {
+            const fromSelect = document.getElementById('from-node');
+            const toSelect = document.getElementById('to-node');
+            
+            // Salva le selezioni correnti
+            const fromValue = fromSelect.value;
+            const toValue = toSelect.value;
+            
+            // Svuota i dropdown
+            fromSelect.innerHTML = '';
+            toSelect.innerHTML = '';
+            
+            // Aggiungi opzione vuota
+            const emptyOption1 = document.createElement('option');
+            emptyOption1.value = '';
+            emptyOption1.textContent = 'Seleziona nodo';
+            fromSelect.appendChild(emptyOption1);
+            
+            const emptyOption2 = document.createElement('option');
+            emptyOption2.value = '';
+            emptyOption2.textContent = 'Seleziona nodo';
+            toSelect.appendChild(emptyOption2);
+            
+            // Riempili con i nodi attuali
+            const nodeItems = nodes.get();
+            nodeItems.forEach(node => {
+                const option1 = document.createElement('option');
+                option1.value = node.id;
+                option1.textContent = node.label || `Nodo ${node.id}`;
+                fromSelect.appendChild(option1);
+                
+                const option2 = document.createElement('option');
+                option2.value = node.id;
+                option2.textContent = node.label || `Nodo ${node.id}`;
+                toSelect.appendChild(option2);
+            });
+            
+            // Ripristina le selezioni precedenti se possibile
+            if (fromValue && nodeItems.some(n => n.id === fromValue)) {
+                fromSelect.value = fromValue;
+            }
+            if (toValue && nodeItems.some(n => n.id === toValue)) {
+                toSelect.value = toValue;
+            }
+        }
+        
+        // Funzione per aggiungere un nodo
+        function addNode(x, y, label, color) {
+            const id = `node${nodeIdCounter++}`;
+            const nodeLabel = label || `Nodo ${id}`;
+            const nodeColor = color || document.getElementById('node-color').value;
+            
+            nodes.add({
+                id: id,
+                label: nodeLabel,
+                color: {
+                    background: nodeColor,
+                    border: darkenColor(nodeColor, 20)
+                },
+                x: x,
+                y: y
+            });
+            
+            // Aggiorna conteggio colori per la legenda
+            if (!colorGroups[nodeColor]) {
+                colorGroups[nodeColor] = 1;
+            } else {
+                colorGroups[nodeColor]++;
+            }
+            
+            updateNodeDropdowns();
+            updateLegend();
+            return id;
+        }
+        
+        // Funzione per scurire un colore per il bordo
+        function darkenColor(color, percent) {
+            const num = parseInt(color.replace("#", ""), 16);
+            const amt = Math.round(2.55 * percent);
+            const R = (num >> 16) - amt;
+            const G = (num >> 8 & 0x00FF) - amt;
+            const B = (num & 0x0000FF) - amt;
+            
+            return "#" + (
+                0x1000000 + 
+                (R < 0 ? 0 : R) * 0x10000 + 
+                (G < 0 ? 0 : G) * 0x100 + 
+                (B < 0 ? 0 : B)
+            ).toString(16).slice(1);
+        }
+        
+        // Listener per il doppio click sul canvas per aggiungere un nodo
+        network.on("doubleClick", function(params) {
+            if (params.nodes.length === 0) {
+                // Doppio click sul canvas
+                const position = network.DOMtoCanvas({ x: params.pointer.DOM.x, y: params.pointer.DOM.y });
+                const label = document.getElementById('node-label').value;
+                const color = document.getElementById('node-color').value;
+                addNode(position.x, position.y, label, color);
+            }
+        });
+        
+        // Listener per la selezione di elementi
+        network.on("click", function(params) {
+            if (params.nodes.length > 0) {
+                selectedNodeId = params.nodes[0];
+                selectedEdgeId = null;
+                
+                // Riempire i campi di modifica con i valori attuali
+                const node = nodes.get(selectedNodeId);
+                document.getElementById('edit-label').value = node.label || '';
+                document.getElementById('edit-color').value = node.color.background || '#3498db';
+            } else if (params.edges.length > 0) {
+                selectedEdgeId = params.edges[0];
+                selectedNodeId = null;
+                
+                // Riempire i campi di modifica con i valori attuali dell'arco
+                const edge = edges.get(selectedEdgeId);
+                document.getElementById('edit-label').value = edge.label || '';
+            } else {
+                selectedNodeId = null;
+                selectedEdgeId = null;
+            }
+        });
+        
+        // Listener per mostrare tooltip sui nodi
+        network.on("hoverNode", function(params) {
+            const node = nodes.get(params.node);
+            const tooltip = document.getElementById('tooltip');
+            tooltip.innerHTML = `<strong>${node.label}</strong>`;
+            tooltip.style.left = `${params.event.center.x}px`;
+            tooltip.style.top = `${params.event.center.y - 40}px`;
+            tooltip.style.display = 'block';
+        });
+        
+        network.on("blurNode", function() {
+            document.getElementById('tooltip').style.display = 'none';
+        });
+        
+        // Aggiungere un nodo con il bottone
+        document.getElementById('add-node').addEventListener('click', function() {
+            const label = document.getElementById('node-label').value;
+            const color = document.getElementById('node-color').value;
+            
+            // Posizione centrale o casuale
+            const canvasWidth = container.clientWidth;
+            const canvasHeight = container.clientHeight;
+            const x = Math.random() * canvasWidth * 0.8;
+            const y = Math.random() * canvasHeight * 0.8;
+            
+            addNode(x, y, label, color);
+        });
+        
+        // Aggiungere un collegamento con il bottone
+        document.getElementById('add-edge').addEventListener('click', function() {
+            const fromId = document.getElementById('from-node').value;
+            const toId = document.getElementById('to-node').value;
+            const label = document.getElementById('edge-label').value;
+            
+            if (fromId && toId) {
+                edges.add({
+                    id: `edge_${fromId}_${toId}_${Date.now()}`,
+                    from: fromId,
+                    to: toId,
+                    label: label
+                });
+            }
+        });
+        
+        // Modificare l'elemento selezionato
+        document.getElementById('edit-selected').addEventListener('click', function() {
+            const newLabel = document.getElementById('edit-label').value;
+            const newColor = document.getElementById('edit-color').value;
+            
+            if (selectedNodeId) {
+                const node = nodes.get(selectedNodeId);
+                
+                // Aggiorna conteggio colori per legenda
+                if (node.color && node.color.background) {
+                    colorGroups[node.color.background]--;
+                    if (colorGroups[node.color.background] <= 0) {
+                        delete colorGroups[node.color.background];
+                    }
+                }
+                
+                if (!colorGroups[newColor]) {
+                    colorGroups[newColor] = 1;
+                } else {
+                    colorGroups[newColor]++;
+                }
+                
+                nodes.update({
+                    id: selectedNodeId,
+                    label: newLabel,
+                    color: {
+                        background: newColor,
+                        border: darkenColor(newColor, 20)
+                    }
+                });
+                
+                updateNodeDropdowns();
+                updateLegend();
+            } else if (selectedEdgeId) {
+                edges.update({
+                    id: selectedEdgeId,
+                    label: newLabel
+                });
+            }
+        });
+        
+        // Eliminare l'elemento selezionato
+        document.getElementById('delete-selected').addEventListener('click', function() {
+            if (selectedNodeId) {
+                // Rimuovi anche gli archi collegati
+                const connectedEdges = network.getConnectedEdges(selectedNodeId);
+                edges.remove(connectedEdges);
+                
+                // Aggiorna conteggio colori per legenda
+                const node = nodes.get(selectedNodeId);
+                if (node.color && node.color.background) {
+                    colorGroups[node.color.background]--;
+                    if (colorGroups[node.color.background] <= 0) {
+                        delete colorGroups[node.color.background];
+                    }
+                }
+                
+                nodes.remove(selectedNodeId);
+                selectedNodeId = null;
+                
+                updateNodeDropdowns();
+                updateLegend();
+            } else if (selectedEdgeId) {
+                edges.remove(selectedEdgeId);
+                selectedEdgeId = null;
+            }
+        });
+        
+        // Salvare il grafo
+        document.getElementById('save-graph').addEventListener('click', function() {
+            const graphData = {
+                nodes: nodes.get(),
+                edges: edges.get(),
+                nodeCounter: nodeIdCounter,
+                colorGroups: colorGroups
+            };
+            
+            localStorage.setItem('savedGraph', JSON.stringify(graphData));
+            alert('Grafo salvato con successo!');
+        });
+        
+        // Caricare il grafo
+        document.getElementById('load-graph').addEventListener('click', function() {
+            const savedData = localStorage.getItem('savedGraph');
+            
+            if (savedData) {
+                try {
+                    const graphData = JSON.parse(savedData);
+                    
+                    // Pulisci dati correnti
+                    nodes.clear();
+                    edges.clear();
+                    
+                    // Carica nodi e archi
+                    nodes.add(graphData.nodes);
+                    edges.add(graphData.edges);
+                    
+                    // Ripristina altre variabili
+                    nodeIdCounter = graphData.nodeCounter || 1;
+                    
+                    // Ripristina gruppi di colori
+                    Object.keys(colorGroups).forEach(key => delete colorGroups[key]);
+                    Object.assign(colorGroups, graphData.colorGroups || {});
+                    
+                    updateNodeDropdowns();
+                    updateLegend();
+                    
+                    alert('Grafo caricato con successo!');
+                } catch (e) {
+                    alert('Errore nel caricamento del grafo: ' + e.message);
+                }
+            } else {
+                alert('Nessun grafo salvato trovato!');
+            }
+        });
+        
+        // Cancellare tutto il grafo
+        document.getElementById('clear-graph').addEventListener('click', function() {
+            if (confirm('Sei sicuro di voler cancellare l\'intero grafo?')) {
+                nodes.clear();
+                edges.clear();
+                nodeIdCounter = 1;
+                
+                // Reimposta gruppi di colori
+                Object.keys(colorGroups).forEach(key => delete colorGroups[key]);
+                
+                updateNodeDropdowns();
+                updateLegend();
+            }
+        });
+        
+        // Esportare il grafo come immagine
+        document.getElementById('export-graph').addEventListener('click', function() {
+            // Ottieni l'URL dell'immagine dal canvas
+            const dataUrl = network.canvas.frame.canvas.toDataURL('image/png');
+            
+            // Crea un link per il download
+            const downloadLink = document.createElement('a');
+            downloadLink.href = dataUrl;
+            downloadLink.download = 'grafo_' + new Date().toISOString().slice(0, 10) + '.png';
+            
+            // Aggiungi il link al documento e clicca
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+            document.body.removeChild(downloadLink);
+        });
+        
+        // Inizializza le dropdown e la legenda
+        updateNodeDropdowns();
+        updateLegend();
+    </script>
+</body>
+</html>
