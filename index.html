@@ -7,14 +7,17 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis.min.css">
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap');
+        
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Cinzel', serif;
             margin: 0;
             padding: 0;
             display: flex;
             flex-direction: column;
             height: 100vh;
-            background-color: #f5f5f5;
+            background-color: #0c0c0c;
+            color: #c7c7c7;
         }
         .container {
             display: flex;
@@ -22,54 +25,76 @@
         }
         #network {
             flex: 1;
-            border: 1px solid #ccc;
-            background-color: white;
+            border: 1px solid #333;
+            background-color: #111;
+            box-shadow: inset 0 0 15px #000;
         }
         .panel {
             width: 300px;
             padding: 15px;
-            background-color: #f0f0f0;
-            border-left: 1px solid #ccc;
+            background-color: #1a1a1a;
+            border-left: 2px solid #2a2a2a;
             overflow-y: auto;
         }
         .header {
-            background-color: #3498db;
-            color: white;
+            background-color: #1c1c1c;
+            color: #0f0;
             padding: 15px;
             text-align: center;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            border-bottom: 3px solid #2d2d2d;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+            background-image: linear-gradient(to right, #0a0a0a, #1c1c1c, #0a0a0a);
+        }
+        .header h1 {
+            text-shadow: 0 0 5px #0f0, 0 0 10px #0f0;
+            letter-spacing: 1px;
         }
         button {
             padding: 8px 12px;
             margin: 5px;
-            background-color: #3498db;
-            color: white;
-            border: none;
-            border-radius: 4px;
+            background-color: #1f3624;
+            color: #0f0;
+            border: 1px solid #0f0;
+            border-radius: 0;
             cursor: pointer;
-            transition: background-color 0.3s;
+            transition: all 0.3s;
+            font-family: 'Cinzel', serif;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
         button:hover {
-            background-color: #2980b9;
+            background-color: #0f0;
+            color: #000;
+            box-shadow: 0 0 10px #0f0;
         }
         input, select {
             width: 100%;
             padding: 8px;
             margin: 5px 0;
-            border: 1px solid #ddd;
-            border-radius: 4px;
+            border: 1px solid #333;
+            background-color: #0a0a0a;
+            color: #0f0;
+            border-radius: 0;
             box-sizing: border-box;
+            font-family: 'Cinzel', serif;
+        }
+        select option {
+            background-color: #0a0a0a;
+            color: #0f0;
         }
         .section {
             margin-bottom: 15px;
             padding: 10px;
-            background-color: white;
-            border-radius: 4px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            background-color: #0a0a0a;
+            border: 1px solid #333;
+            box-shadow: 0 0 5px rgba(0,255,0,0.1);
         }
         .section h3 {
             margin-top: 0;
-            color: #3498db;
+            color: #0f0;
+            border-bottom: 1px solid #0f0;
+            padding-bottom: 5px;
+            text-shadow: 0 0 3px #0f0;
         }
         .actions {
             display: flex;
@@ -83,22 +108,25 @@
         .color-picker input[type="color"] {
             width: 40px;
             margin-right: 10px;
+            background: #0a0a0a;
+            border: 1px solid #333;
         }
         .tooltip {
             position: absolute;
-            background-color: rgba(0,0,0,0.7);
-            color: white;
+            background-color: rgba(0,0,0,0.9);
+            color: #0f0;
             padding: 5px 10px;
-            border-radius: 4px;
+            border: 1px solid #0f0;
             font-size: 12px;
             z-index: 1000;
             display: none;
+            box-shadow: 0 0 10px rgba(0,255,0,0.3);
         }
         #legend {
             margin-top: 15px;
             padding: 10px;
-            background-color: white;
-            border-radius: 4px;
+            background-color: #0a0a0a;
+            border: 1px solid #333;
         }
         .legend-item {
             display: flex;
@@ -109,73 +137,74 @@
             width: 20px;
             height: 20px;
             margin-right: 10px;
-            border-radius: 50%;
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
         }
         .info-text {
             font-size: 12px;
-            color: #666;
+            color: #555;
             margin-top: 5px;
+            font-style: italic;
         }
     </style>
 </head>
 <body>
     <div class="header">
-        <h1>Creatore Interattivo di Grafi</h1>
+        <h1>Dark Network Creator</h1>
     </div>
     <div class="container">
         <div id="network"></div>
         <div class="panel">
             <div class="section">
                 <h3>Informazioni</h3>
-                <p>Crea e modifica il tuo grafo in modo interattivo:</p>
+                <p>Crea e modifica la tua rete delle arti oscure:</p>
                 <ul>
-                    <li>Clicca due volte per creare un nodo</li>
-                    <li>Seleziona nodi e usa le opzioni qui sotto</li>
-                    <li>Trascina tra nodi per creare collegamenti</li>
+                    <li>Clicca due volte per creare un horcrux</li>
+                    <li>Seleziona elementi e usa le opzioni qui sotto</li>
+                    <li>Trascina tra horcrux per creare collegamenti</li>
                 </ul>
             </div>
             
             <div class="section">
-                <h3>Aggiungi Nodo</h3>
-                <input type="text" id="node-label" placeholder="Etichetta del nodo">
+                <h3>Crea Horcrux</h3>
+                <input type="text" id="node-label" placeholder="Nome dell'horcrux">
                 <div class="color-picker">
-                    <input type="color" id="node-color" value="#3498db">
-                    <span>Colore del nodo</span>
+                    <input type="color" id="node-color" value="#107010">
+                    <span>Essenza magica</span>
                 </div>
-                <button id="add-node">Aggiungi Nodo</button>
+                <button id="add-node">Crea Horcrux</button>
             </div>
             
             <div class="section">
-                <h3>Aggiungi Collegamento</h3>
+                <h3>Trama Oscura</h3>
                 <select id="from-node"></select>
                 <select id="to-node"></select>
-                <input type="text" id="edge-label" placeholder="Etichetta del collegamento (opzionale)">
-                <button id="add-edge">Collega Nodi</button>
+                <input type="text" id="edge-label" placeholder="Nome dell'incantesimo di collegamento">
+                <button id="add-edge">Trama Oscura</button>
             </div>
             
             <div class="section">
-                <h3>Modifica</h3>
-                <input type="text" id="edit-label" placeholder="Nuova etichetta">
+                <h3>Trasfigurazione</h3>
+                <input type="text" id="edit-label" placeholder="Nuovo nome">
                 <div class="color-picker">
-                    <input type="color" id="edit-color" value="#3498db">
-                    <span>Nuovo colore</span>
+                    <input type="color" id="edit-color" value="#107010">
+                    <span>Nuova essenza</span>
                 </div>
-                <button id="edit-selected">Modifica Selezionato</button>
-                <button id="delete-selected">Elimina Selezionato</button>
+                <button id="edit-selected">Trasfigura</button>
+                <button id="delete-selected">Evanesco</button>
             </div>
             
             <div class="section">
-                <h3>Gestione Grafo</h3>
+                <h3>Incantesimi Arcani</h3>
                 <div class="actions">
-                    <button id="save-graph">Salva Grafo</button>
-                    <button id="load-graph">Carica Grafo</button>
+                    <button id="save-graph">Salva Pergamena</button>
+                    <button id="load-graph">Evoca Pergamena</button>
                 </div>
                 <div class="actions">
-                    <button id="clear-graph">Cancella Tutto</button>
-                    <button id="export-graph">Esporta Immagine</button>
+                    <button id="clear-graph">Deletrius</button>
+                    <button id="export-graph">Geminio</button>
                 </div>
                 <div class="info-text">
-                    I dati verranno salvati localmente nel tuo browser.
+                    I tuoi segreti sono protetti nella Camera dei Segreti.
                 </div>
             </div>
             
@@ -198,25 +227,48 @@
         // Configurazione per la visualizzazione
         const options = {
             nodes: {
-                shape: 'dot',
-                size: 20,
+                shape: 'diamond',
+                size: 25,
                 font: {
-                    size: 14
+                    size: 14,
+                    color: '#0f0',
+                    face: 'Cinzel',
+                    strokeWidth: 2,
+                    strokeColor: '#000'
                 },
                 borderWidth: 2,
-                shadow: true
+                shadow: {
+                    enabled: true,
+                    color: '#0f0',
+                    size: 10,
+                    x: 0,
+                    y: 0
+                }
             },
             edges: {
                 width: 2,
+                color: {
+                    color: '#1a3c1a',
+                    highlight: '#0f0',
+                    hover: '#0f0'
+                },
                 arrows: {
-                    to: { enabled: true, scaleFactor: 1 }
+                    to: { enabled: true, scaleFactor: 1, type: 'arrow' }
                 },
                 smooth: {
-                    type: 'continuous'
+                    type: 'continuous',
+                    roundness: 0.5
                 },
                 font: {
                     size: 12,
-                    align: 'middle'
+                    align: 'middle',
+                    color: '#0f0',
+                    face: 'Cinzel'
+                },
+                shadow: {
+                    enabled: true,
+                    color: 'rgba(0,255,0,0.2)',
+                    size: 5
                 }
             },
             physics: {
@@ -322,7 +374,7 @@
         // Funzione per aggiungere un nodo
         function addNode(x, y, label, color) {
             const id = `node${nodeIdCounter++}`;
-            const nodeLabel = label || `Nodo ${id}`;
+            const nodeLabel = label || `Horcrux ${id}`;
             const nodeColor = color || document.getElementById('node-color').value;
             
             nodes.add({
@@ -330,7 +382,18 @@
                 label: nodeLabel,
                 color: {
                     background: nodeColor,
-                    border: darkenColor(nodeColor, 20)
+                    border: darkenColor(nodeColor, 20),
+                    highlight: {
+                        background: '#0f0',
+                        border: '#fff'
+                    },
+                    hover: {
+                        background: '#0a0',
+                        border: '#0f0'
+                    }
+                },
+                font: {
+                    color: '#0f0'
                 },
                 x: x,
                 y: y
